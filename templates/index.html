@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Management Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Basic styles and layout for the page */
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header styling */
+        #header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            background: #007bff;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #header img {
+            margin-right: 10px;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        /* Main container layout */
+        #mainContainer {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-gap: 20px;
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Styling for individual sections */
+        #videoContainer,
+        #countContainer,
+        #chartContainer {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            min-height: 300px;
+        }
+
+        /* Video feed styling */
+        #videoContainer img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+
+        /* Adjust container for smaller screens */
+        @media (max-width: 768px) {
+            #mainContainer {
+                grid-template-columns: 1fr; /* Stack sections vertically */
+            }
+
+            #videoContainer,
+            #countContainer,
+            #chartContainer {
+                margin: 10px 0;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            #footer {
+                font-size: 14px;
+            }
+        }
+
+        /* Footer Styling */
+        #footer {
+            padding: 15px;
+            background: #333;
+            color: white;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        /* Loading and error message styling */
+        #loadingIndicator,
+        #errorMessage {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 5px;
+            z-index: 2000;
+        }
+
+        /* Buttons and Form Styling */
+        #updateVideoFeed {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #updateVideoFeed:hover {
+            background-color: #0056b3;
+        }
+
+        /* Styling for the form in the report section */
+        #report-section form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #report-section label,
+        #report-section select,
+        #report-section input {
+            font-size: 14px;
+        }
+
+        #report-section button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #report-section button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="header">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Traffic Management Logo" width="100" height="auto">
+        <h1>Traffic Management Dashboard</h1>
+    </header>
+
+    <main id="mainContainer">
+        <!-- Video Container -->
+        <section id="videoContainer">
+            <h2>Traffic Video Feed</h2>
+            <img src="{{ url_for('video_feed') }}" alt="Live Traffic Video Feed" id="trafficVideo">
+            <input type="text" id="videoUrl" placeholder="Enter live video feed URL">
+            <button id="updateVideoFeed">Update Video Feed</button>
+        </section>
+
+        <!-- Vehicle Counts Section -->
+        <section id="countContainer">
+            <h2>Vehicle Counts</h2>
+            <div aria-live="polite">
+                <p>Cars: <span id="carCount">0</span></p>
+                <p>Buses: <span id="busCount">0</span></p>
+                <p>Trucks: <span id="truckCount">0</span></p>
+                <p>Motorbikes: <span id="motorbikeCount">0</span></p>
+                <p>Persons: <span id="personCount">0</span></p>
+                <p>Total Vehicles: <span id="totalVehicles">0</span></p>
+                <p>Density: <span id="density">0.00</span></p>
+            </div>
+        </section>
+
+        <!-- Vehicle Trends Section (Chart) -->
+        <section id="chartContainer">
+            <h2>Vehicle Trends</h2>
+            <canvas id="vehicleChart" aria-label="Chart displaying vehicle trends over time"></canvas>
+        </section>
+
+        <!-- Report Section for Filtering -->
+        <section id="report-section">
+            <h2>Traffic Report</h2>
+            <form id="filterForm" action="/download_csv" method="GET">
+                <label for="vehicle-type">Select Vehicle Type:</label>
+                <select id="vehicle-type" name="vehicle_type">
+                    <option value="">All</option>
+                    <option value="Car">Car</option>
+                    <option value="Bus">Bus</option>
+                    <option value="Truck">Truck</option>
+                    <option value="Motorbike">Motorbike</option>
+                    <option value="Person">Person</option>
+                </select>
+
+                <label for="selected-date">Select Date:</label>
+                <input type="date" id="selected-date" name="selected_date">
+
+                <label for="end-date">End Date:</label>
+                <input type="date" id="end-date" name="end_date">
+
+                <button type="submit">Download CSV</button>
+            </form>
+        </section>
+    </main>
+
+    <footer id="footer">
+        <p>Created by Group 9 - IT CAPSTONE PROJECT</p>
+        <p>Andre McLean | Morece Johnson | Nadian Whyte | Peter Bryan</p>
+        <p>&copy; 2024 Traffic Management System - All Rights Reserved</p>
+    </footer>
+
+    <div id="loadingIndicator" aria-live="polite">Loading...</div>
+    <div id="errorMessage" role="alert">Error fetching data. Please try again later.</div>
+
+    <script>
+        // Function to update vehicle counts
+        function updateCount(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            if (element.textContent !== newValue) {
+                element.textContent = newValue;
+            }
+        }
+
+        // Initialize Chart.js
+        let ctx = document.getElementById('vehicleChart').getContext('2d');
+        let vehicleChart = new Chart(ctx, {
+            type: 'line', // Default chart type
+            data: {
+                labels: [], // Time labels
+                datasets: [
+                    { label: 'Cars', data: [], borderColor: 'red', backgroundColor: 'rgba(255, 0, 0, 0.2)', tension: 0.4 },
+                    { label: 'Buses', data: [], borderColor: 'blue', backgroundColor: 'rgba(0, 0, 255, 0.2)', tension: 0.4 },
+                    { label: 'Trucks', data: [], borderColor: 'green', backgroundColor: 'rgba(0, 255, 0, 0.2)', tension: 0.4 },
+                    { label: 'Motorbikes', data: [], borderColor: 'yellow', backgroundColor: 'rgba(255, 255, 0, 0.2)', tension: 0.4 },
+                    { label: 'Persons', data: [], borderColor: 'black', backgroundColor: 'rgba(0, 0, 0, 0.2)', tension: 0.4 },
+                ],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false },
+                },
+                scales: {
+                    x: { display: true, title: { display: true, text: 'Time' } },
+                    y: { display: true, title: { display: true, text: 'Vehicle Count' } },
+                },
+            },
+        });
+
+        // Fetch current counts and update UI
+        function fetchCurrentCounts() {
+            document.getElementById('loadingIndicator').style.display = 'block';
+            fetch('/current_count')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateUI(data);
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    document.getElementById('errorMessage').style.display = 'none';
+                })
+                .catch(error => {
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    document.getElementById('errorMessage').style.display = 'block';
+                });
+        }
+
+        // Update UI elements with data
+        function updateUI(data) {
+            updateCount('carCount', data.vehicle_count.car);
+            updateCount('busCount', data.vehicle_count.bus);
+            updateCount('truckCount', data.vehicle_count.truck);
+            updateCount('motorbikeCount', data.vehicle_count.motorbike);
+            updateCount('personCount', data.vehicle_count.person);
+            updateCount('totalVehicles', data.total_vehicles);
+            updateCount('density', data.density.toFixed(2));
+            updateChart(data);
+        }
+
+        // Update chart with data
+        function updateChart(data) {
+            const labels = vehicleChart.data.labels;
+            const now = new Date().toLocaleTimeString();
+            if (labels.length > 20) labels.shift(); // Keep last 20 data points
+            labels.push(now);
+
+            vehicleChart.data.datasets[0].data.push(data.vehicle_count.car);
+            vehicleChart.data.datasets[1].data.push(data.vehicle_count.bus);
+            vehicleChart.data.datasets[2].data.push(data.vehicle_count.truck);
+            vehicleChart.data.datasets[3].data.push(data.vehicle_count.motorbike);
+            vehicleChart.data.datasets[4].data.push(data.vehicle_count.person);
+
+            vehicleChart.update();
+        }
+
+        // Fetch data every 3 seconds
+        setInterval(fetchCurrentCounts, 3000);
+
+    </script>
+</body>
+
+</html>

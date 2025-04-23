@@ -1,0 +1,70 @@
+Overview
+I developed a traffic management system that utilizes computer vision and a web-based dashboard to monitor and analyze traffic in real-time. My system detects and tracks vehicles and pedestrians in a video feed, calculates vehicle density, and displays the data on a dynamic web dashboard.
+
+1. Object Detection and Tracking
+YOLO (You Only Look Once)
+Purpose: I use YOLO, a state-of-the-art, real-time object detection system, to detect vehicles and pedestrians in each frame of the video feed.
+
+Implementation: I have integrated the YOLOv8 model for detection using the ultralytics library.
+
+Process: For each frame, YOLO identifies objects and returns their bounding boxes, class IDs, and confidence scores.
+
+DeepSORT (Simple Online and Realtime Tracking)
+Purpose: To ensure consistent tracking across frames, I employ DeepSORT, an algorithm that tracks multiple objects, maintaining consistent IDs for each tracked object.
+
+Implementation: I use the deep_sort_realtime library to initialize a DeepSort tracker.
+
+Process: The tracker updates the positions of objects based on YOLO detections, even when objects temporarily leave the frame or are occluded.
+
+2. Data Processing and Calculation
+Persistent Counts
+Purpose: I maintain a running count of detected objects to avoid resetting counts on page reload.
+
+Implementation: A dictionary persistent_counts helps me keep track of the counts for each class (e.g., car, bus, truck, motorbike, person).
+
+Smoothing Algorithm
+Purpose: To smooth out fluctuations in vehicle counts for a more stable and accurate representation.
+
+Implementation: I calculate a moving average using a deque to store recent counts, which mitigates sudden changes due to temporary occlusions or detection errors.
+
+Vehicle Density Calculation
+Purpose: I calculate the density of vehicles in the monitored area.
+
+Implementation: Using the formula:
+
+Vehicle Density
+=
+Number of Vehicles
+Area of Observation
+where I assume the area is 1 km² for simplicity.
+
+3. Web Application
+Frontend Components
+HTML Structure: My HTML structure includes sections for the video feed, vehicle counts, color key, loading indicator, error message, and a traffic chart.
+
+CSS Styling: I use CSS to style the components, ensuring a clean and responsive design.
+
+JavaScript: JavaScript helps me dynamically update the counts, chart, and handle loading and error states.
+
+Loading Indicator and Error Handling
+Loading Indicator: I display a loading message while fetching data from the server.
+
+Error Handling: I show an error message if there is an issue fetching data.
+
+Chart.js Integration
+Purpose: To visualize traffic data trends over time using a line chart.
+
+Implementation: I use the Chart.js library to create and update the chart dynamically.
+
+4. Flask Backend
+Endpoint Definitions
+Video Feed Endpoint: Streams the video feed to the frontend.
+
+Current Count Endpoint: Provides real-time data on vehicle counts and density.
+
+Flask Routes
+/video_feed: Streams the video feed frames.
+
+/current_count: Returns the current counts and density in JSON format.
+
+/: Renders the main dashboard page.

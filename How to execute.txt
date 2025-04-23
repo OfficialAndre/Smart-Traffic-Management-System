@@ -1,0 +1,14 @@
+Greetings!
+
+After extracting the file. 
+Open the file and go to the video folder. 
+From the video folder, you will need the complete path for the video in order for the program to work. 
+Open traffic_detection.py file (preferably in the latest version of python which can be found here: https://www.python.org/ftp/python/3.13.0/python-3.13.0-amd64.exe)
+Once the file is open, please go to line 22. 
+In line 22, replace the following path between the ' ' :::: cap = cv2.VideoCapture('YOUR COPIED PATH GOES HERE') #can be changed to any video link
+Save the file. 
+Return to the folder with all the documents 'TrafficManagementSystem'.
+Double click traffic_detection.py
+Open a browser of your choice and go to http://127.0.0.1:5000/
+
+Success. All the best.
